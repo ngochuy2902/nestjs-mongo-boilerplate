@@ -1,0 +1,36 @@
+services:
+  nest-app:
+    container_name: nest-api
+    image: nest-api
+    platform: linux/amd64
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      target: ${TARGET:-development}
+    env_file:
+      - .env.docker
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      nest-mongo:
+        condition: service_healthy
+
+  nest-mongo:
+    container_name: nest-mongo
+    image: mongo:8.0.6
+    platform: linux/amd64
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: r00t
+      MONGO_INITDB_DATABASE: nest-db
+    volumes:
+      - ./mongo-data:/data/db
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: [ "CMD", "mongosh", "--username", "root", "--password", "r00t", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
